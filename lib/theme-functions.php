@@ -109,6 +109,25 @@ add_filter('use_block_editor_for_post', 'disable_gutenberg_post', 10, 2);
 
 
 /*==============================================================================
+  # Always redirect to wp-admin
+==============================================================================*/
+
+function restrict_wp_content() {
+
+	if( !is_admin() ) {
+
+		$wp_admin = admin_url();
+
+		wp_redirect( $wp_admin, 301 ); 
+    exit;
+	}
+
+}
+add_action( 'template_redirect', 'restrict_wp_content' );
+
+
+
+/*==============================================================================
   # Change wp-permalinks to gatsby-permalinks
 ==============================================================================*/
 
