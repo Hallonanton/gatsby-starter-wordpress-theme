@@ -1,0 +1,58 @@
+/*=======================================================
+	ACF admin page styles - Enqueues in acf-fields.php
+=======================================================*/
+
+.acf-input .acf-flexible-content .layout {
+    margin: 50px 0;
+    border: 5px solid #e1e1e1;
+}
+.acf-input .acf-table .acf-flexible-content .layout {
+    margin: 0;
+    border: 1px solid #e1e1e1;
+}
+.acf-input .acf-flexible-content .layout .acf-icon.-plus,
+.acf-input .acf-flexible-content .layout .acf-icon.-plus:hover{
+	color: white;
+	background-color: #2ecc71;
+	border: none;
+}
+.acf-input .acf-flexible-content .layout .acf-icon.-minus,
+.acf-input .acf-flexible-content .layout .acf-icon.-minus:hover{
+	color: white;
+    background-color: #F55E4F;
+    border: none;
+}
+.acf-input .acf-flexible-content .layout .acf-fc-layout-handle{
+	font-size: 18px;
+	font-weight: 700;
+	letter-spacing: 1px;
+}
+.acf-input .acf-table .acf-flexible-content .layout .acf-fc-layout-handle{
+	font-size: 13px;
+	font-weight: 400;
+	letter-spacing: 0px;
+}
+.acf-input .acf-flexible-content .layout .acf-fc-layout-handle .acf-fc-layout-order{
+	font-size: 18px;
+	font-weight: 700;
+	letter-spacing: 1px;
+	width: 25px;
+	height: 25px;
+	line-height: 25px;
+}
+.acf-input .acf-table .acf-flexible-content .layout .acf-fc-layout-handle .acf-fc-layout-order{
+	font-size: 13px;
+	font-weight: 400;
+	letter-spacing: 0px;
+	width: 15px;
+	height: 15px;
+	line-height: 15px;
+}
+.acf-repeater.-block .acf-table,
+.acf-repeater.-block .acf-table > tbody > tr > td{
+	border-width: 2px;
+	border-color: #e1e1e1;
+}
+.acf-repeater.-block .acf-row-handle.order{
+	font-size: 20px;
+}
