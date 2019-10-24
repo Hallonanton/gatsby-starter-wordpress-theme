@@ -109,25 +109,6 @@ add_filter('use_block_editor_for_post', 'disable_gutenberg_post', 10, 2);
 
 
 /*==============================================================================
-  # Always redirect to wp-admin
-==============================================================================*/
-
-function restrict_wp_content() {
-
-	if( !is_admin() ) {
-
-		$wp_admin = admin_url();
-
-		wp_redirect( $wp_admin, 301 ); 
-    exit;
-	}
-
-}
-add_action( 'template_redirect', 'restrict_wp_content' );
-
-
-
-/*==============================================================================
   # Change wp-permalinks to gatsby-permalinks
 ==============================================================================*/
 
@@ -161,9 +142,7 @@ global $watch_taxonomies;
 
 //$key equals old path, $value equals new path
 $watch_taxonomies = [
-  'case_category'   => 'case',
-  'inspo_category'  => 'inspo',
-  'category'        => 'post'
+  'article_category'   => 'article',
 ];
 
 
@@ -242,7 +221,7 @@ function add_custom_tax_post_rewrite( $rules, $is_tax_filter = false ) {
   foreach ( $watch_taxonomies as $tax_slug => $post_type ) :
 
     $cpt_obj = get_post_type_object( $post_type );
-    $cpt_slug = ( $post_type === 'post' ) ? 'press' : $cpt_obj->rewrite['slug'];
+    $cpt_slug = $cpt_obj->rewrite['slug'];
 
 
     $terms = get_terms( $tax_slug, [
@@ -371,282 +350,6 @@ add_filter( 'wpseo_metabox_prio', 'yoasttobottom');
   # populate_post_obj_with_acf
 ==============================================================================*/
 
-function populate_post_obj_with_acf( $posts, $post_type = 'post' ) {
-
-  $fields_to_check = [];
-
-  switch ( $post_type ) {
-    case 'case':
-      $fields_to_check[] = 'label';
-      $fields_to_check[] = 'excerpt_main_image';
-      $fields_to_check[] = 'main_image';
-      $fields_to_check[] = 'horizontal_image';
-      $fields_to_check[] = 'align_bg_x';
-      $fields_to_check[] = 'align_bg_y';
-
-      break;
-
-    case 'coworkers':
-      $fields_to_check[] = 'label';
-      $fields_to_check[] = 'mail';
-      $fields_to_check[] = 'phone';
-      $fields_to_check[] = 'about';
-      $fields_to_check[] = 'main_image';
-      $fields_to_check[] = 'vertical_image';
-      $fields_to_check[] = 'cpt_categories';
-
-      break;
-    
-    default:
-      $fields_to_check[] = 'heading';
-      $fields_to_check[] = 'excerpt';
-      $fields_to_check[] = 'excerpt_main_image';
-      $fields_to_check[] = 'main_image';
-
-      break;
-  }
-
-  if ( $posts ) :
-    foreach( $posts as $key => $post ) :
-      if ( $posts[$key] ) : 
-
-        $posts[$key]->link = get_permalink($post->ID);
-        $posts[$key]->acf = [];
-
-        if ( $fields_to_check ) : 
-          foreach( $fields_to_check as $field) : 
-            if ( $value = get_field($field, $post->ID) ) :
-
-              $posts[$key]->acf[$field] = $value;
-
-            elseif ( $field === 'cpt_categories' ) :
-
-              $posts[$key]->acf[$field] = add_categories_to_cpt_rest( $post );
-
-            endif;
-          endforeach;
-        endif;
-      endif;
-    endforeach;
-  endif;
-
-  return $posts;
-}
-
-
-
-/*==============================================================================
-  # Add more data to posts for use with ACF Post_obj
-==============================================================================*/
-
-add_filter( 'acf/rest_api/page/get_fields', function( $data, $request, $response ) {
-  if ( $response instanceof WP_REST_Response ) {
-      $data = $response->get_data();
-  }
-
-  //Add articles/cases etc as content 
-  if ( $data['acf']['content'] ) :
-    foreach( $data['acf']['content'] as $key => $layout ) :
-
-      switch ($layout['acf_fc_layout']) {
-
-        /*
-         * Press
-         */
-        case 'Press':
-          
-          $press = null;
-
-          $args = [
-            'posts_per_page'  => 3,
-            'post_type'       => 'post',
-            'post_status'     => 'publish',
-            'orderby'         => 'date',
-            'order'           => 'DESC'
-          ];
-
-          if ( $layout['type'] === 'latest' ) :
-            
-            $press = get_posts( $args );
-
-          elseif ( $layout['type'] === 'category' )  : 
-            
-            $args['tax_query'] = [
-              [
-                'taxonomy'    => 'category',
-                'field'       => 'term_id',
-                'terms'       => $layout['category']
-              ]
-            ];
-            $press = get_posts( $args );
-
-          elseif ( $layout['type'] === 'choosen' )  : 
-
-            if ( $layout['choosen'] ) : 
-              foreach ( $layout['choosen'] as $choosen ) : 
-
-                $press[] = $choosen['press'];
-
-              endforeach;
-            endif;
-            
-          endif;
-
-          $data['acf']['content'][$key]['posts'] = populate_post_obj_with_acf( $press, 'post' );
-          break;
-
-
-        /*
-         * Inspo
-         */
-        case 'Inspo':
-          
-          $inspo = null;
-
-          $args = [
-            'posts_per_page'  => 3,
-            'post_type'       => 'inspo',
-            'post_status'     => 'publish',
-            'orderby'         => 'date',
-            'order'           => 'DESC'
-          ];
-
-          if ( $layout['type'] === 'latest' ) :
-            
-            $inspo = get_posts( $args );
-
-          elseif ( $layout['type'] === 'category' )  : 
-            
-            $args['tax_query'] = [
-              [
-                'taxonomy'    => 'inspo_category',
-                'field'       => 'term_id',
-                'terms'       => $layout['category']
-              ]
-            ];
-            $inspo = get_posts( $args );
-
-          elseif ( $layout['type'] === 'choosen' )  : 
-
-            if ( $layout['choosen'] ) : 
-              foreach ( $layout['choosen'] as $choosen ) : 
-
-                $inspo[] = $choosen['inspo'];
-
-              endforeach;
-            endif;
-            
-          endif;
-
-          $data['acf']['content'][$key]['posts'] = populate_post_obj_with_acf( $inspo, 'inspo' );
-          break;
-
-        
-        /*
-         * CaseSlider
-         */
-        case 'CaseSlider':
-          
-          $cases = null;
-
-          $args = [
-            'posts_per_page'  => 3,
-            'post_type'       => 'case',
-            'post_status'     => 'publish',
-            'orderby'         => 'date',
-            'order'           => 'DESC'
-          ];
-
-          if ( $layout['type'] === 'latest' ) :
-            
-            $cases = get_posts( $args );
-
-          elseif ( $layout['type'] === 'category' )  : 
-
-            $args['tax_query'] = [
-              [
-                'taxonomy'    => 'case_category',
-                'field'       => 'term_id',
-                'terms'       => $layout['category']
-              ]
-            ];
-            $cases = get_posts( $args );
-
-          elseif ( $layout['type'] === 'choosen' )  : 
-
-            if ( $layout['choosen'] ) : 
-              foreach ( $layout['choosen'] as $choosen ) : 
-
-                $cases[] = $choosen['case'];
-
-              endforeach;
-            endif;
-            
-          endif;
-
-          $data['acf']['content'][$key]['cases'] = populate_post_obj_with_acf( $cases, 'case' );
-          break;
-
-        /*
-         * Coworkers
-         */
-        case 'Coworkers':
-
-          $coworkers = null;
-
-          $args = [
-            'posts_per_page'  => -1,
-            'post_type'       => 'coworkers',
-            'post_status'     => 'publish',
-            'orderby'         => 'menu_order',
-            'order'           => 'ASC'
-          ];
-
-          if ( $layout['type'] === 'simple' && $layout['category'] ) {
-            $args['tax_query'] = [
-              [
-                'taxonomy' => 'coworkers_category',
-                'field'    => 'term_id',
-                'terms'    => $layout['category'],
-              ]
-            ];
-          }
-
-          $coworkers = get_posts( $args );
-          $data['acf']['content'][$key]['coworkers'] = populate_post_obj_with_acf( $coworkers, 'coworkers' );
-
-          //Add categories for filtering
-          $terms = get_terms([
-            'taxonomy' => 'coworkers_category',
-            'hide_empty' => true,
-            'orderby' => 'description',
-            'order' => 'ASC',
-          ]);
-
-          if($terms) {
-            $coworker_sections = [];
-
-            foreach( $terms as $term ) :
-
-              $coworker_sections[] = [
-                'name' => $term->name,
-                'slug' => $term->slug,
-                'link' => get_term_link( $term, 'coworkers_category' )
-              ];
-
-            endforeach;
-
-            $data['acf']['content'][$key]['coworkers_category'] = $coworker_sections;
-          }
-
-          break;
-      }
-
-    endforeach;
-  endif;
-
-  return $data;
-}, 10, 3 );
 
 
 /*==============================================================================
@@ -669,12 +372,8 @@ function create_api_yoast_meta() {
   $yoast_to_rest_types = [
     'post',
     'page',
-    'case',
-    'inspo',
-    'category',
-    'coworkers',
-    'case_category',
-    'inspo_category'
+    'article',
+    'article_category'
   ];
 
   foreach( $yoast_to_rest_types as $type ) : 
@@ -729,8 +428,7 @@ function add_categories_to_cpt_rest( $post ) {
 function create_api_categories_cpt() {
 
   $cpt_categories_rest_types = [
-    'case',
-    'inspo',
+    'article',
   ];
 
   foreach( $cpt_categories_rest_types as $type ) : 
