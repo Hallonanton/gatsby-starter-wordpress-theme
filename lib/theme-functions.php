@@ -13,8 +13,7 @@
   # Rewrite permalinks for categories
   # Register menu
   # Move Yoast meta to bottom
-  # populate_post_obj_with_acf
-  # Add more data to posts for use with ACF Post_obj
+  # Add more data to ACF Post Obj
   # Add yoast meta to rest api
   # Add categories to cpt rest api
   # Add default excerpt to posts
@@ -366,8 +365,77 @@ add_filter( 'wpseo_metabox_prio', 'yoasttobottom');
 
 
 /*==============================================================================
-  # populate_post_obj_with_acf
+  # Add more data to ACF Post Obj
 ==============================================================================*/
+
+/*
+ * get_acf_fields
+ */
+
+function get_acf_fields( $post_ID ) {
+  return get_fields($post_ID) || null;
+}
+
+
+/*
+ * add_custom_tags_to_post_obj
+ */
+
+function add_custom_tags_to_post_obj( $post_obj ) {
+
+  $post = json_decode(json_encode($post_obj), true);
+  $ID = $post['ID'];
+
+  //Taxonomies
+  $post_taxs = get_object_taxonomies($post['post_type']);
+
+  if ( $post_taxs ) :
+    foreach ($post_taxs as $post_tax) :
+      $post['post_taxonomies'][$post_tax] = get_the_terms($ID, $post_tax);
+    endforeach;
+  else : 
+    $post_taxs = null;
+  endif;
+
+  //Custom fields
+  $post['custom_fields'] = get_acf_fields($ID);
+
+  //Permalink
+  $post['permalink'] = get_permalink($ID);
+
+  return $post;
+}
+
+/*
+ * add_post_data
+ */
+
+function add_post_data( $value, $post_id, $field ) {
+  $updated_post = [];
+
+  if ( is_array($value) ) :
+
+    foreach ($value as $key => $item) :
+      
+      if ( is_object($item) ) :
+        $updated_post[] = add_custom_tags_to_post_obj( $item ); 
+
+      else :
+        $updated_post[] = $item;
+
+      endif;
+
+    endforeach;
+
+  elseif ( is_object($value) ) :
+    $updated_post[] = add_custom_tags_to_post_obj( $value );
+
+  endif;
+
+
+  return $updated_post;
+}
+add_filter('acf/format_value/type=post_object', 'add_post_data', 15, 3);
 
 
 
@@ -498,17 +566,22 @@ add_action( 'transition_post_status', 'add_post_excerpt', 10, 3 );
 add_filter('display_post_states', 'add_post_state_for_sub_pages');
 function add_post_state_for_sub_pages( $states = array(), $post = 0 ) { 
   global $post;
+  $integritypage = get_field('integritypage','options');
 
   if ( get_page_template_slug( $post->ID ) === 'template-dummy.php' ) {
     $states[] = __('Dummysida - Visas ej besökare'); 
   } 
+
+  if ( $integritypage && $integritypage->ID === $post->ID ) {
+    $states[] = __('Integritetspolicysida'); 
+  }
 
   return $states;
 }
 
 
 /*==============================================================================
-  # Remove some flexible content layouts from acf on different templates/post types
+  # Add template name as body class
 ==============================================================================*/
 
 function add_layouts_admin_body_class( $classes ) {
