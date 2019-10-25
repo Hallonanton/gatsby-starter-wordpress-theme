@@ -373,7 +373,8 @@ add_filter( 'wpseo_metabox_prio', 'yoasttobottom');
  */
 
 function get_acf_fields( $post_ID ) {
-  return get_fields($post_ID) || null;
+  $fields = get_fields($post_ID);
+  return $fields ? $fields : null;
 }
 
 
@@ -398,7 +399,7 @@ function add_custom_tags_to_post_obj( $post_obj ) {
   endif;
 
   //Custom fields
-  $post['custom_fields'] = get_acf_fields($ID);
+  $post['acf'] = get_acf_fields($ID);
 
   //Permalink
   $post['permalink'] = get_permalink($ID);
@@ -446,9 +447,9 @@ add_filter('acf/format_value/type=post_object', 'add_post_data', 15, 3);
 function add_yoast_meta_to_rest( $post ) {
 
   $yoast_meta = [
-    'yoast_wpseo_title' => get_post_meta( $post['id'], '_yoast_wpseo_title', true),
-    'yoast_wpseo_metadesc' => get_post_meta( $post['id'], '_yoast_wpseo_metadesc', true),
-    'yoast_wpseo_canonical' => get_post_meta( $post['id'], '_yoast_wpseo_canonical', true)
+    'meta_title' => get_post_meta( $post['id'], '_yoast_wpseo_title', true),
+    'meta_description' => get_post_meta( $post['id'], '_yoast_wpseo_metadesc', true),
+    'meta_canonical' => get_post_meta( $post['id'], '_yoast_wpseo_canonical', true)
   ];
 
   return $yoast_meta;
