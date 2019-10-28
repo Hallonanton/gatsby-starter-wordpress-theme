@@ -13,9 +13,9 @@
   # Rewrite permalinks for categories
   # Register menu
   # Move Yoast meta to bottom
-  # Add more data to ACF Post Obj
   # Add yoast meta to rest api
   # Add categories to cpt rest api
+  # Add more data to ACF Post Obj
   # Add default excerpt to posts
   # Add custom post-state for dummy-template
   # Remove some flexible content layouts from acf on different templates/post types
@@ -365,82 +365,6 @@ add_filter( 'wpseo_metabox_prio', 'yoasttobottom');
 
 
 /*==============================================================================
-  # Add more data to ACF Post Obj
-==============================================================================*/
-
-/*
- * get_acf_fields
- */
-
-function get_acf_fields( $post_ID ) {
-  $fields = get_fields($post_ID);
-  return $fields ? $fields : null;
-}
-
-
-/*
- * add_custom_tags_to_post_obj
- */
-
-function add_custom_tags_to_post_obj( $post_obj ) {
-
-  $post = json_decode(json_encode($post_obj), true);
-  $ID = $post['ID'];
-
-  //Taxonomies
-  $post_taxs = get_object_taxonomies($post['post_type']);
-
-  if ( $post_taxs ) :
-    foreach ($post_taxs as $post_tax) :
-      $post['post_taxonomies'][$post_tax] = get_the_terms($ID, $post_tax);
-    endforeach;
-  else : 
-    $post_taxs = null;
-  endif;
-
-  //Custom fields
-  $post['acf'] = get_acf_fields($ID);
-
-  //Permalink
-  $post['permalink'] = get_permalink($ID);
-
-  return $post;
-}
-
-/*
- * add_post_data
- */
-
-function add_post_data( $value, $post_id, $field ) {
-  $updated_post = [];
-
-  if ( is_array($value) ) :
-
-    foreach ($value as $key => $item) :
-      
-      if ( is_object($item) ) :
-        $updated_post[] = add_custom_tags_to_post_obj( $item ); 
-
-      else :
-        $updated_post[] = $item;
-
-      endif;
-
-    endforeach;
-
-  elseif ( is_object($value) ) :
-    $updated_post[] = add_custom_tags_to_post_obj( $value );
-
-  endif;
-
-
-  return $updated_post;
-}
-add_filter('acf/format_value/type=post_object', 'add_post_data', 15, 3);
-
-
-
-/*==============================================================================
   # Add yoast meta to rest api
 ==============================================================================*/
 
@@ -534,6 +458,84 @@ function create_api_categories_cpt() {
 }
  
 add_action( 'rest_api_init', 'create_api_categories_cpt' );
+
+
+/*==============================================================================
+  # Add more data to ACF Post Obj
+==============================================================================*/
+
+/*
+ * get_acf_fields
+ */
+
+function get_acf_fields( $post_ID ) {
+  $fields = get_fields($post_ID);
+  return $fields ? $fields : null;
+}
+
+
+/*
+ * add_custom_tags_to_post_obj
+ */
+
+function add_custom_tags_to_post_obj( $post_obj ) {
+
+  $post = json_decode(json_encode($post_obj), true);
+  $ID = $post['ID'];
+
+  //Taxonomies
+  $post_taxs = get_object_taxonomies($post['post_type']);
+
+  if ( $post_taxs ) :
+    foreach ($post_taxs as $post_tax) :
+      $post['post_taxonomies'][$post_tax] = get_the_terms($ID, $post_tax);
+    endforeach;
+  else : 
+    $post_taxs = null;
+  endif;
+
+  //Custom fields
+  $post['acf'] = get_acf_fields($ID);
+
+  //Permalink
+  $post['link'] = get_permalink($ID);
+
+  //Categories
+  $post['cpt_categories'] = add_categories_to_cpt_rest($post_obj);
+
+  return $post;
+}
+
+/*
+ * add_post_data
+ */
+
+function add_post_data( $value, $post_id, $field ) {
+  $updated_post = [];
+
+  if ( is_array($value) ) :
+
+    foreach ($value as $key => $item) :
+      
+      if ( is_object($item) ) :
+        $updated_post[] = add_custom_tags_to_post_obj( $item ); 
+
+      else :
+        $updated_post[] = $item;
+
+      endif;
+
+    endforeach;
+
+  elseif ( is_object($value) ) :
+    $updated_post[] = add_custom_tags_to_post_obj( $value );
+
+  endif;
+
+
+  return $updated_post;
+}
+add_filter('acf/format_value/type=post_object', 'add_post_data', 15, 3);
 
 
 /*==============================================================================
