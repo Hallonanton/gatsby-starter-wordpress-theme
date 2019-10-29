@@ -23,6 +23,7 @@
   # Attachment filter
   # Add page-attribute support for posts
   # Add deploy page
+  # Add notices for MU plugins
 
 ==============================================================================*/
 
@@ -572,7 +573,7 @@ function add_post_state_for_sub_pages( $states = array(), $post = 0 ) {
   $integritypage = get_field('integritypage','options');
 
   if ( get_page_template_slug( $post->ID ) === 'template-dummy.php' ) {
-    $states[] = __('Dummysida - Visas ej besökare'); 
+    $states[] = __('Mallsida - Visas ej besökare'); 
   } 
 
   if ( $integritypage && $integritypage->ID === $post->ID ) {
@@ -792,3 +793,44 @@ function ajax_netlify_deploy() {
 
   wp_die();
 }
+
+
+/*==============================================================================
+  # Add notices for MU plugins
+==============================================================================*/
+
+function MU_plugin_notices() {
+  $active_plugins = get_option('active_plugins');
+  $class = 'notice notice-error';
+  $layout = '<div class="%1$s"><p>%2$s</p></div>';
+  $message = 'Pluginet <a href="%1$s" target="_blank" rel="noreffer noopener">%2$s</a> är inte aktiverat. Installera och aktivera pluginet för att temat ska fungera korrekt.';
+
+  //ACF to REST API
+  if(!in_array('acf-to-rest-api/class-acf-to-rest-api.php',apply_filters('active_plugins',$active_plugins))) :
+    $plugin = 'ACF to REST API';
+    $plugin_link = 'https://wordpress.org/plugins/acf-to-rest-api/';
+    printf($layout,esc_attr($class),sprintf($message,$plugin_link,$plugin)); 
+  endif;
+
+  //Advanced Custom Fields PRO
+  if(!in_array('advanced-custom-fields-pro/acf.php',apply_filters('active_plugins',$active_plugins))) :
+    $plugin = 'Advanced Custom Fields PRO';
+    $plugin_link = 'https://www.advancedcustomfields.com/pro/';
+    printf($layout,esc_attr($class),sprintf($message,$plugin_link,$plugin)); 
+  endif;
+
+  //WP-REST-API V2 Menus
+  if(!in_array('wp-rest-api-v2-menus/wp-rest-api-v2-menus.php',apply_filters('active_plugins',$active_plugins))) :
+    $plugin = 'WP-REST-API V2 Menus';
+    $plugin_link = 'https://wordpress.org/plugins/wp-rest-api-v2-menus/';
+    printf($layout,esc_attr($class),sprintf($message,$plugin_link,$plugin)); 
+  endif;
+
+  //Yoast SEO
+  if(!in_array('wordpress-seo/wp-seo.php',apply_filters('active_plugins',$active_plugins))) :
+    $plugin = 'Yoast SEO';
+    $plugin_link = 'https://wordpress.org/plugins/wordpress-seo/';
+    printf($layout,esc_attr($class),sprintf($message,$plugin_link,$plugin)); 
+  endif;
+}
+add_action( 'admin_notices', 'MU_plugin_notices' );
